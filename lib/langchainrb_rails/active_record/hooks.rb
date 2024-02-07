@@ -93,11 +93,12 @@ module LangchainrbRails
         # @param query [String] The query to search for
         # @param k [Integer] The number of results to return
         # @return [ActiveRecord::Relation] The ActiveRecord relation
-        def similarity_search(query, k: 1)
+        def similarity_search(query, k: 1, **wheres)
           records = class_variable_get(:@@provider).similarity_search(
             query: query,
             k: k
           )
+          records = records.where(wheres) if wheres
 
           # We use "__id" when Weaviate is the provider
           ids = records.map { |record| record.try("id") || record.dig("__id") }
@@ -110,11 +111,12 @@ module LangchainrbRails
         # @param k [Integer] The number of results to return
         # @param distance_max [Float] The max distance
         # @return [[ActiveRecord::Relation], map_ids_distance: [Hash]] The ActiveRecord relation + a map with distances
-        def similarity_search_with_distance(query, k: 1, distance_max: 2.0)
+        def similarity_search_with_distance(query, k: 1, distance_max: 2.0, **wheres)
           records = class_variable_get(:@@provider).similarity_search(
             query: query,
             k: k
           )
+          records = records.where(wheres) if wheres
           records = records.select { |record| record.neighbor_distance.to_f < distance_max }
           map_ids_distance = records.map { |record| [record.try("id") || record.dig("__id"), record.neighbor_distance] }.to_h
           # We use "__id" when Weaviate is the provider
